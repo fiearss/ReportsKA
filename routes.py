@@ -6,7 +6,7 @@ routes = Blueprint('routes', __name__, url_prefix='/')
 
 @routes.route('/')
 def hello():
-    return 'Hello, World!'
+    return 'Hello, World!!!'
 
 
 # @routes.route('/general-report')
