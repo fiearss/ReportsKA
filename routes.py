@@ -23,6 +23,10 @@ def graph_report():
             return jsonify({"error": "Нет данных"}), 400
         try:
             report = create_report(data)
+            # Открываем файл для записи в бинарном режиме (wb)
+            with open('отчет.odt', 'wb') as f:
+            # Записываем содержимое report в файл
+                f.write(report.read())
             # Кодирование содержимого BytesIO в Base64
             encoded_report = base64.b64encode(report.getvalue()).decode('utf-8')
             return jsonify({"report": encoded_report}), 200

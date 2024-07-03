@@ -2,6 +2,7 @@ import collections
 import re
 import io
 from typing import Iterator
+from utils import decode_base64, encode_base64
 
 from odf import opendocument, text
 from odf.draw import Frame, Image
@@ -56,9 +57,17 @@ def fill_image(document, elem, val):
         - width - ширина картинки
         - height - высота картинки
     """
+    img = decode_base64(val.get('path'))
+    # print(img)
+    image_stream = io.BytesIO(img)
+    image = Image()
+
+
+    # img_name = "image.png"
+    # temp_file = io.BytesIO(img_data)
     photoframe = Frame(width=str(val.get('width')) + "pt", height=str(val.get('height')) + "pt")
-    href = document.addPicture(val.get('path'))
-    photoframe.addElement(Image(href=href))
+    # href = document.addPicture(image_stream)
+    photoframe.addElement(image)
     elem.parentNode.insertBefore(photoframe, elem)
     elem.data = ''
 
@@ -103,9 +112,9 @@ def create_report(data, template_name='template_report/graph_template.odt'):
 
 # if __name__ == '__main__':
 #     # data = {
-#     #     "header": 'Отчет по системам мобильной космической связи',
-#     #     "map": {
-#     #         "path": '1.png',
+#     #     "header_text": 'Отчет по системам мобильной космической связи',
+#     #     "image": {
+#     #         "binary": '1.png',
 #     #         "type": 'image',
 #     #         "width": 460,
 #     #         "height": 300
