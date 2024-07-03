@@ -5,6 +5,7 @@ app = Flask(__name__)
 
 app.register_blueprint(routes)
 
+# Разрешаем CORS запросы
 @app.after_request
 def add_cors_headers(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
