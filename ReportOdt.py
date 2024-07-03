@@ -109,9 +109,9 @@ class BaseReportOdt:
         blob = output.read()
 
         # FIXME: Временно, для тестов
-        print(blob)
-        with open('report.odt', 'wb') as file:
-            file.write(blob)
+        # print(blob)
+        # with open('report.odt', 'wb') as file:
+        #     file.write(blob)
 
         return {
             'odt_doc': blob
