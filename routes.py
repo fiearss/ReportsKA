@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, send_file
 
 from ReportOdt import KaForRssReport
 
@@ -19,7 +19,12 @@ def rss_report():
         try:
             report = KaForRssReport(data=data, template_name=data.get('path_template'))
             report.create_report()
-            return jsonify(report.save_to_blob()), 200
+            return send_file(
+                             report.save_to_blob(),
+                             as_attachment=True, 
+                             download_name='report.odt', 
+                             mimetype='application/vnd.oasis.opendocument.text'
+                             ), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 500
         
