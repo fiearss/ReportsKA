@@ -106,16 +106,14 @@ class BaseReportOdt:
         # Перемещаем указатель в начало потока
         output.seek(0)
         # Читаем поток и получаем blob сохраненного документа
-        blob = output.read()
+        # blob = output.read()
 
         # FIXME: Временно, для тестов
         # print(blob)
         # with open('report.odt', 'wb') as file:
         #     file.write(blob)
 
-        return {
-            'odt_doc': blob
-        }
+        return output
     
 
     def _fill_image(document, elem, val):
