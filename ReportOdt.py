@@ -73,6 +73,7 @@ class BaseReportOdt:
                             self._fill_image(elem, value)
         
     
+    
     def save_to_blob(self):
         # Создаем поток для сохранения
         output = io.BytesIO()
