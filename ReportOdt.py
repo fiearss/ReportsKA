@@ -96,7 +96,8 @@ class BaseReportOdt:
         
         image_base64 = value.get('image_base64')
         # Заглушка
-        image_base64 = image_base64.replace('data:image/png;base64,', '')
+        image_base64 = image_base64.split(',')[1]
+        
         decoded_image = base64.b64decode(image_base64)
 
         # Create a file-like object from the decoded image
