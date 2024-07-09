@@ -3,10 +3,11 @@ from ReportOdt import KaForRssReport
 data = {
     "path_template": 'two_table',
     "header": 'Отчет по системам мобильной космической связи',
-    # "image_map": {
-    #     "type": 'image',
-    #     "blob": 'blob binary'
-    # },
+    "base_image": {
+        "type": 'image',
+        "image_base64":  
+            'string'
+            },
     "start": '01.01.2020',
     "end": '01.01.2020',
     "time": "01.01.2020 00:00:00",
@@ -34,6 +35,6 @@ data = {
 
 
 if __name__ == '__main__':
-    report = KaForRssReport(data=data, template_name=data.get('path_template'))
+    report = KaForRssReport(data=data, template_name='rss_template')
     report.create_report()
     report.save_to_blob()
