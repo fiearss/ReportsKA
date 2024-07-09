@@ -82,24 +82,21 @@ class BaseReportOdt:
         # Перемещаем указатель в начало потока
         output.seek(0)
         # Читаем поток и получаем blob сохраненного документа
-        # blob = output.read()
+        blob = output.read()
 
         # FIXME: Временно, для тестов
         # print(blob)
-        # with open('report.odt', 'wb') as file:
-        #     file.write(blob)
+        with open('report.odt', 'wb') as file:
+            file.write(blob)
 
         return output
     
 
     def _fill_image(self, elem, value):
         
-        # width, height = self.get_image_size_from_base64(value.get('image_base64'))
-        # print(width, height)
-        # # print(value)
-        # photoframe = Frame(width=str(width) + "pt", height=str(height) + "pt")
-
         image_base64 = value.get('image_base64')
+        # Заглушка
+        image_base64 = image_base64.replace('data:image/png;base64,', '')
         decoded_image = base64.b64decode(image_base64)
 
         # Create a file-like object from the decoded image
