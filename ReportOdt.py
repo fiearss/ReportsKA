@@ -1,3 +1,4 @@
+import base64
 import collections
 import re
 import io
@@ -8,32 +9,6 @@ from odf.draw import Frame, Image
 from odf.element import Text, Element
 from odf.table import TableRow, TableCell
 
-
-# def fill_image(document, elem, val):
-#     """
-#     Заполняет картинкой обнаруженный тег
-#     :param document: Документ, к которому будет приложена картинка
-#     :param elem: Место встаки картинки
-#     :param val: Данные с описание картинки
-#     Должен содержать:
-#         - path - путь до картинки
-#         - type - если это обычная картинка, то тип 'image' (добавлено для будущей расширяемости)
-#         - width - ширина картинки
-#         - height - высота картинки
-#     """
-#     img = decode_base64(val.get('path'))
-#     # print(img)
-#     image_stream = io.BytesIO(img)
-#     image = Image()
-
-
-#     # img_name = "image.png"
-#     # temp_file = io.BytesIO(img_data)
-#     photoframe = Frame(width=str(val.get('width')) + "pt", height=str(val.get('height')) + "pt")
-#     # href = document.addPicture(image_stream)
-#     photoframe.addElement(image)
-#     elem.parentNode.insertBefore(photoframe, elem)
-#     elem.data = ''
 
 class BaseReportOdt:
     def __init__(self, data, template_name):
@@ -95,8 +70,9 @@ class BaseReportOdt:
                         elif value.items() and value.get('type') == 'image':
                             # Передаем шаблон (документ), элемент (узел), словарь 
                             # с данными картинки в функцию заполнения картинки
-                            self._fill_image(self.document, elem, value)
+                            self._fill_image(elem, value)
         
+    
     
     def save_to_blob(self):
         # Создаем поток для сохранения
@@ -116,9 +92,50 @@ class BaseReportOdt:
         return output
     
 
-    def _fill_image(document, elem, val):
-        # TODO: Сделать вставку картинки
-        pass
+    def _fill_image(self, elem, value):
+        
+        # width, height = self.get_image_size_from_base64(value.get('image_base64'))
+        # print(width, height)
+        # # print(value)
+        # photoframe = Frame(width=str(width) + "pt", height=str(height) + "pt")
+
+        image_base64 = value.get('image_base64')
+        decoded_image = base64.b64decode(image_base64)
+
+        # Create a file-like object from the decoded image
+        image_stream = io.BytesIO(decoded_image)
+        image_bytes = image_stream.read()
+        
+        image_stream.seek(0)
+
+        width, height = self._get_png_size(image_stream)
+        width, height = self._scale_size_image(width, height)
+        photoframe = Frame(width=str(width) + "pt", height=str(height) + "pt")
+
+        href = self.document.addPicture(filename='image.png', content=image_bytes)
+        photoframe.addElement(Image(href=href))
+        elem.parentNode.insertBefore(photoframe, elem)
+        elem.data = ''
+
+    def _scale_size_image(self, width, height, max_width=481):
+        # 28,3491 - сколько в 1 см пикселей
+        scale = max_width/width
+        height *= scale
+
+        return max_width, height
+
+
+    def _get_png_size(self, file_path):
+
+        # Смещаемся к началу файла
+        file_path.seek(16, io.SEEK_SET)
+        # Читаем данные, содержащие ширину и высоту изображения
+        width_bytes = file_path.read(4)
+        height_bytes = file_path.read(4)
+        # Преобразуем байты в целые числа
+        width = int.from_bytes(width_bytes, byteorder='big')
+        height = int.from_bytes(height_bytes, byteorder='big')
+        return width, height
 
 
     def _fill_table(self, elem, value):
