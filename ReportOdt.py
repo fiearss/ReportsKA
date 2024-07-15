@@ -116,7 +116,7 @@ class BaseReportOdt:
         elem.data = ''
 
     def _scale_size_image(self, width, height, max_width=481):
-        # 28,3491 - сколько в 1 см пикселей
+        # 28,3491... - сколько в 1 см пикселей
         scale = max_width/width
         height *= scale
 
