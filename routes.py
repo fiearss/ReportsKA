@@ -1,12 +1,42 @@
-from flask import Blueprint, request, jsonify, send_file
-
+from flask import Blueprint, request, jsonify, send_file, render_template, send_from_directory, render_template, redirect, url_for
+import os
 from ReportOdt import KaForRssReport
 
 routes = Blueprint('routes', __name__, url_prefix='/')
+TEMPLATE_REPORT_FOLDER = 'template_report'
+
+# @routes.route('/')
+# def root_page():
+#     return render_template('root.html')
 
 @routes.route('/')
-def hello():
-    return ''
+def index():
+    files = os.listdir(TEMPLATE_REPORT_FOLDER)
+    print(os.getcwd())
+    print(files)
+    return render_template('root.html', files=files)
+
+@routes.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return redirect(url_for('routes.index'))
+    file = request.files['file']
+    if file.filename == '':
+        return redirect(url_for('routes.index'))
+    if file:
+        file.save(os.path.join(TEMPLATE_REPORT_FOLDER, file.filename))
+    return redirect(url_for('routes.index'))
+
+@routes.route('/delete/<filename>')
+def delete_file(filename):
+    file_path = os.path.join(TEMPLATE_REPORT_FOLDER, filename)
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    return redirect(url_for('routes.index'))
+
+@routes.route('/download/<filename>')
+def download_file(filename):
+    return send_from_directory(TEMPLATE_REPORT_FOLDER, filename, as_attachment=True)
 
 
 @routes.route('/report', methods=['POST'])

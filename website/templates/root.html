@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Template Report Files</title>
+</head>
+<body>
+    <h1>Template Report Files</h1>
+    <ul>
+        {% for file in files %}
+        <li>
+            {{ file }}
+            <a href="{{ url_for('routes.download_file', filename=file) }}">Download</a>
+            <a href="{{ url_for('routes.delete_file', filename=file) }}">Delete</a>
+        </li>
+        {% endfor %}
+    </ul>
+    <form action="{{ url_for('routes.upload_file') }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <input type="submit" value="Upload">
+    </form>
+</body>
+</html>

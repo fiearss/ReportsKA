@@ -1,7 +1,8 @@
 from flask import Flask
 from routes import routes
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='website/templates')
 
 app.register_blueprint(routes)
 
