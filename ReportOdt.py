@@ -115,10 +115,13 @@ class BaseReportOdt:
         elem.parentNode.insertBefore(photoframe, elem)
         elem.data = ''
 
-    def _scale_size_image(self, width, height, max_width=481):
-        # 28,3491... - сколько в 1 см пикселей
+    def _scale_size_image(self, width, height, max_width=481, max_height=708):
+        # 28,3491 - сколько в 1 см пикселей
         scale = max_width/width
         height *= scale
+
+        if height > max_height:
+            height = max_height
 
         return max_width, height
 
