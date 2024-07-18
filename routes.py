@@ -1,4 +1,6 @@
-from flask import Blueprint, request, jsonify, send_file, render_template, send_from_directory, render_template, redirect, url_for
+import csv
+from io import StringIO
+from flask import Blueprint, Response, request, jsonify, send_file, render_template, send_from_directory, render_template, redirect, url_for
 import os
 from ReportOdt import KaForRssReport
 
@@ -58,3 +60,27 @@ def rss_report():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
         
+
+
+@routes.route('/report/csv', methods=['POST'])
+def create_report_csv():
+    # Получаем данные из JSON-запроса
+    body_data = request.get_json()
+    header = body_data.get('header', {})
+    rows = body_data.get('rows', {})
+   
+    output = StringIO(newline='')
+    # Для поддержки UTF-8
+    output.write('\uFEFF')  # Записываем BOM в начало файла как строку
+    writer = csv.DictWriter(output, fieldnames=header.keys(), delimiter=';')
+    # Записываем заголовок
+    writer.writerow(header)
+    # Записываем данные
+    writer.writerows(rows)
+    
+    output.seek(0)  # Move cursor to start of StringIO
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-disposition": "attachment; filename=output.csv"} 
+    )
