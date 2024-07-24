@@ -17,7 +17,7 @@ class BaseReportOdt:
         # Имя шаблона
         self.template_name = template_name
         # Загружаем шаблон
-        self.document = opendocument.load(f'template_report/{self.template_name}.odt')
+        self.document = opendocument.load(f'template_reports/{self.template_name}.odt')
         # Начало тега который считываются из шаблона $${header} - пример
         self.start_symbol = "$${"
         # Начинаем поиск тегов с корня документа

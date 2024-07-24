@@ -5,7 +5,7 @@ import os
 from ReportOdt import KaForRssReport
 
 routes = Blueprint('routes', __name__, url_prefix='/')
-TEMPLATE_REPORT_FOLDER = 'template_report'
+TEMPLATE_REPORT_FOLDER = 'template_reports'
 UPLOAD_PASSWORD = "1234"  # Пароль для загрузки файлов
 
 
