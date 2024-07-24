@@ -8,9 +8,6 @@ routes = Blueprint('routes', __name__, url_prefix='/')
 TEMPLATE_REPORT_FOLDER = 'template_report'
 UPLOAD_PASSWORD = "1234"  # Пароль для загрузки файлов
 
-# @routes.route('/')
-# def root_page():
-#     return render_template('root.html')
 
 @routes.route('/')
 def index():
