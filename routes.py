@@ -4,6 +4,7 @@ from ReportOdt import KaForRssReport
 
 routes = Blueprint('routes', __name__, url_prefix='/')
 TEMPLATE_REPORT_FOLDER = 'template_report'
+UPLOAD_PASSWORD = "1234"  # Пароль для загрузки файлов
 
 # @routes.route('/')
 # def root_page():
@@ -12,12 +13,15 @@ TEMPLATE_REPORT_FOLDER = 'template_report'
 @routes.route('/')
 def index():
     files = os.listdir(TEMPLATE_REPORT_FOLDER)
-    print(os.getcwd())
-    print(files)
     return render_template('root.html', files=files)
+
 
 @routes.route('/upload', methods=['POST'])
 def upload_file():
+    password = request.form.get('password')
+    if password != UPLOAD_PASSWORD:
+        return redirect(url_for('routes.index'))  # Неправильный пароль, редирект на главную страницу
+
     if 'file' not in request.files:
         return redirect(url_for('routes.index'))
     file = request.files['file']
@@ -27,8 +31,12 @@ def upload_file():
         file.save(os.path.join(TEMPLATE_REPORT_FOLDER, file.filename))
     return redirect(url_for('routes.index'))
 
-@routes.route('/delete/<filename>')
+@routes.route('/delete/<filename>', methods=['POST'])
 def delete_file(filename):
+    password = request.form.get('password')
+    if password != UPLOAD_PASSWORD:
+        return redirect(url_for('routes.index'))  # Неправильный пароль, редирект на главную страницу
+
     file_path = os.path.join(TEMPLATE_REPORT_FOLDER, filename)
     if os.path.exists(file_path):
         os.remove(file_path)

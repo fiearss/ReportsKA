@@ -2,22 +2,56 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Template Report Files</title>
+    <title>Управление шаблонами</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>Template Report Files</h1>
-    <ul>
+    <h1>Управление шаблонами</h1>
+    <ul class="file-list">
         {% for file in files %}
-        <li>
-            {{ file }}
-            <a href="{{ url_for('routes.download_file', filename=file) }}">Download</a>
-            <a href="{{ url_for('routes.delete_file', filename=file) }}">Delete</a>
+        <li class="file-item">
+            <div class="file-info">
+                <span class="file-name">{{ file }}</span>
+                <div class="file-actions">
+                    <a href="{{ url_for('routes.download_file', filename=file) }}" class="action-button">Скачать</a>
+                    <a href="javascript:void(0);" onclick="showDeleteModal('{{ file }}')" class="action-button">Удалить</a>
+                </div>
+            </div>
         </li>
         {% endfor %}
     </ul>
-    <form action="{{ url_for('routes.upload_file') }}" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
-        <input type="submit" value="Upload">
+
+    <!-- Кнопка для загрузки файла -->
+    <button class="upload-button" type="button" onclick="document.getElementById('fileInput').click()">Загрузить</button>
+
+    <!-- Скрытая форма для отправки файла и пароля -->
+    <form id="uploadForm" action="{{ url_for('routes.upload_file') }}" method="post" enctype="multipart/form-data">
+        <input type="file" id="fileInput" name="file" style="display: none;" onchange="showUploadPasswordModal()">
+        <input type="hidden" id="uploadPasswordInput" name="password">
     </form>
+
+    <!-- Модальное окно для загрузки файла -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUploadModal()">&times;</span>
+            <p>Введите пароль для загрузки:</p>
+            <input type="password" id="uploadModalPassword" maxlength="4" oninput="checkUploadPassword()">
+        </div>
+    </div>
+
+    <!-- Модальное окно для удаления файла -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDeleteModal()">&times;</span>
+            <p>Введите пароль для удаления:</p>
+            <input type="password" id="deleteModalPassword" maxlength="4" oninput="checkDeletePassword()">
+            <input type="hidden" id="deleteFilename">
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
