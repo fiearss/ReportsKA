@@ -110,7 +110,7 @@ class BaseReportOdt:
         width, height = self._scale_size_image(width, height)
         photoframe = Frame(width=str(width) + "pt", height=str(height) + "pt")
 
-        href = self.document.addPicture(filename='image.png', content=image_bytes)
+        href = self.document.addPicture(filename=f'{elem}.png', content=image_bytes)
         photoframe.addElement(Image(href=href))
         elem.parentNode.insertBefore(photoframe, elem)
         elem.data = ''
