@@ -3,6 +3,7 @@ from io import StringIO
 from flask import Blueprint, Response, request, jsonify, send_file, render_template, send_from_directory, render_template, redirect, url_for
 import os
 from ReportOdt import KaForRssReport
+from ReportDocx import ReportDocx
 
 routes = Blueprint('routes', __name__, url_prefix='/')
 TEMPLATE_REPORT_FOLDER = 'template_reports'
@@ -51,6 +52,7 @@ def rss_report():
     if request.method == 'POST':
         # Получаем данные из POST-запроса
         data = request.get_json()  # Предполагаем, что данные в формате JSON
+        print(data)
         if not data:
             return jsonify({"error": "Нет данных"}), 400
         try:
@@ -89,3 +91,53 @@ def create_report_csv():
         mimetype="text/csv; charset=utf-8",
         headers={"Content-disposition": "attachment; filename=output.csv"} 
     )
+
+
+@routes.route('/report/docx', methods=['POST'])
+def generate_docx_report():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON data received"}), 400
+
+        filename = data.get("filename", "report.docx")
+        if not filename.endswith(".docx"):
+            filename += ".docx"
+
+        formatting = data.get("formatting", {})
+        title = data.get("title", "Автоотчёт")
+        paragraphs = data.get("paragraphs", [])
+        table = data.get("table", {})
+        image = data.get("image", {})
+
+        doc = ReportDocx()
+        doc.add_title(title, formatting=formatting)
+
+        for paragraph in paragraphs:
+            doc.add_paragraph(paragraph, formatting=formatting)
+
+        if "headers" in table and "rows" in table:
+            doc.add_table(table["headers"], table["rows"], formatting=formatting)
+
+        if "path" in image:
+            doc.add_image(
+                image["path"],
+                width_inches=image.get("width", 4.5),
+                caption=image.get("caption", None),
+                formatting=formatting
+            )
+
+        # Создаём объект в памяти
+        file_stream = io.BytesIO()
+        doc.doc.save(file_stream)
+        file_stream.seek(0)  # Вернуться в начало
+
+        return send_file(
+            file_stream,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        )
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
