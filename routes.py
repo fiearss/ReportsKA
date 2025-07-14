@@ -2,8 +2,10 @@ import csv
 from io import StringIO
 from flask import Blueprint, Response, request, jsonify, send_file, render_template, send_from_directory, render_template, redirect, url_for
 import os
+import io
 from ReportOdt import KaForRssReport
 from ReportDocx import ReportDocx
+
 
 routes = Blueprint('routes', __name__, url_prefix='/')
 TEMPLATE_REPORT_FOLDER = 'template_reports'
