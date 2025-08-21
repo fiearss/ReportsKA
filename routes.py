@@ -107,7 +107,7 @@ def generate_docx_report():
             filename += ".docx"
 
         formatting = data.get("formatting", {})
-        title = data.get("title", "Автоотчёт")
+        title = data.get("title", "")
         paragraphs = data.get("paragraphs", [])
         table = data.get("table", {})
         image = data.get("image", {})
