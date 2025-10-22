@@ -106,47 +106,52 @@ def generate_docx_report():
         if not filename.endswith(".docx"):
             filename += ".docx"
 
-        formatting = data.get("formatting", {})
-        # title = data.get("title", "")
-        paragraphs = data.get("paragraphs", [])
-        table = data.get("table", {})
-        image = data.get("image", {})
-
+        # Создаём экземпляр генератора
         doc = ReportDocx()
-        title_obj = data.get("title")
-        if isinstance(title_obj, dict):
-            title_text = title_obj.get("text", "Отчёт")
-            title_formatting = title_obj.get("formatting")
+
+        # --- Заголовок ---
+        title = data.get("title")
+        if isinstance(title, dict):
+            text = title.get("text", "Отчёт")
+            formatting = title.get("formatting")
         else:
-            title_text = title_obj or "Отчёт"
-            title_formatting = None
+            text = title or "Отчёт"
+            formatting = None
+        doc.add_title(text, formatting=formatting)
 
-        doc.add_title(title_text, formatting=title_formatting)
+        # --- Параграфы ---
+        for p in data.get("paragraphs", []):
+            if isinstance(p, dict):
+                doc.add_paragraph(p.get("text", ""), formatting=p.get("formatting"))
+            else:
+                doc.add_paragraph(p)
 
-        for paragraph in paragraphs:
-            doc.add_paragraph(paragraph, formatting=formatting)
-
-        if "headers" in table and "rows" in table:
-            doc.add_table(table["headers"], table["rows"], formatting=formatting)
-
-        if "path" in image:
-            doc.add_image(
-                image["path"],
-                width_inches=image.get("width", 4.5),
-                caption=image.get("caption", None),
-                formatting=formatting
+        # --- Таблица ---
+        table = data.get("table")
+        if table and "headers" in table and "rows" in table:
+            doc.add_table(
+                table["headers"],
+                table["rows"],
+                formatting=table.get("formatting")
             )
 
-        # Создаём объект в памяти
-        file_stream = io.BytesIO()
-        doc.doc.save(file_stream)
-        file_stream.seek(0)  # Вернуться в начало
+        # --- Картинка ---
+        image = data.get("image")
+        if image and "bytes" in image:
+            img_bytes = io.BytesIO(bytes(image["bytes"]))  # принимаем base64/байты
+            doc.add_picture(
+                img_bytes,
+                formatting=image.get("formatting"),
+                caption=image.get("caption")
+            )
 
+        # --- Генерация файла в оперативке ---
+        file_stream = doc.get_bytes()  # вместо doc.doc.save(...)
         return send_file(
             file_stream,
             as_attachment=True,
             download_name=filename,
-            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
     except Exception as e:
