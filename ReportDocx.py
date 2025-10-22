@@ -1,112 +1,163 @@
+# generator/ReportDocx.py
 from docx import Document
-from docx.shared import Pt, RGBColor, Inches
+from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.oxml.ns import qn
+from io import BytesIO
 
 
 class ReportDocx:
     def __init__(self):
         self.doc = Document()
 
-    # ---------- ПАРАГРАФЫ ----------
-    def add_paragraph(self, text, formatting=None):
-        formatting = formatting or {}
-        style = formatting.get("style", None)
-        paragraph = self.doc.add_paragraph(text, style=style)
-        self._apply_paragraph_formatting(paragraph, formatting)
-        return paragraph
-
-    # ---------- ЗАГОЛОВОК ----------
+    # ==========================
+    #  Добавление заголовка
+    # ==========================
     def add_title(self, text, formatting=None):
-        formatting = formatting or {}
-        style = formatting.get("style", "Title")
-        paragraph = self.doc.add_paragraph(text, style=style)
-        self._apply_paragraph_formatting(paragraph, formatting)
+        paragraph = self.doc.add_heading(text, level=1)
+        if formatting:
+            self._apply_text_formatting(paragraph, formatting)
         return paragraph
 
-    # ---------- ТАБЛИЦЫ ----------
-    def add_table(self, headers, rows, formatting=None):
-        formatting = formatting or {}
-        table = self.doc.add_table(rows=1, cols=len(headers))
-        table.style = formatting.get("style", "Table Grid")
+    # ==========================
+    #  Добавление параграфа
+    # ==========================
+    def add_paragraph(self, text, formatting=None):
+        paragraph = self.doc.add_paragraph(text)
+        if formatting:
+            self._apply_text_formatting(paragraph, formatting)
+        return paragraph
 
-        # Заголовки
+    # ==========================
+    #  Добавление таблицы
+    # ==========================
+    def add_table(self, headers, rows, formatting=None):
+        # создаём таблицу с одной строкой для заголовков
+        table = self.doc.add_table(rows=1, cols=len(headers))
         hdr_cells = table.rows[0].cells
         for i, header in enumerate(headers):
             hdr_cells[i].text = str(header)
-            self._apply_table_cell_formatting(hdr_cells[i], formatting)
 
-        # Строки данных
+        # добавляем строки данных
         for row_data in rows:
             row_cells = table.add_row().cells
-            for i, cell_value in enumerate(row_data):
-                row_cells[i].text = str(cell_value)
-                self._apply_table_cell_formatting(row_cells[i], formatting)
+            for j, cell_value in enumerate(row_data):
+                row_cells[j].text = str(cell_value)
+
+        if formatting:
+            self._apply_table_formatting(table, formatting)
 
         return table
 
-    # ---------- КАРТИНКИ ----------
-    def add_image(self, image_path, width_inches=4, caption=None, formatting=None):
-        formatting = formatting or {}
-        picture = self.doc.add_picture(image_path, width=Inches(width_inches))
-        last_paragraph = self.doc.paragraphs[-1]
-        self._apply_paragraph_formatting(last_paragraph, formatting)
+    # ==========================
+    #  Добавление картинки
+    # ==========================
+    def add_picture(self, image_bytes, formatting=None, caption=None):
+        # image_bytes — это BytesIO или путь к файлу
+        picture = self.doc.add_picture(image_bytes)
+
+        if formatting:
+            self._apply_picture_formatting(picture, formatting)
 
         if caption:
-            caption_para = self.doc.add_paragraph(caption, style=formatting.get("style", "Caption"))
-            self._apply_paragraph_formatting(caption_para, formatting)
-
+            paragraph = self.doc.add_paragraph(caption)
+            if formatting:
+                self._apply_text_formatting(paragraph, formatting)
         return picture
 
-    # ---------- СОХРАНЕНИЕ ----------
-    def save(self, path):
-        self.doc.save(path)
+    # ==========================
+    #  Внутренние функции
+    # ==========================
+    def _apply_text_formatting(self, paragraph, formatting):
+        """Форматирование текста (заголовков и параграфов)."""
+        run = paragraph.runs[0] if paragraph.runs else paragraph.add_run()
 
-    # ---------- ВНУТРЕННИЕ МЕТОДЫ ФОРМАТИРОВАНИЯ ----------
+        # Шрифт
+        if "font_name" in formatting:
+            run.font.name = formatting["font_name"]
+        if "font_size" in formatting:
+            run.font.size = Pt(formatting["font_size"])
 
-    def _apply_paragraph_formatting(self, paragraph, formatting):
-        # --- Текст внутри параграфа ---
-        for run in paragraph.runs:
-            font = run.font
-            if "font_name" in formatting:
-                font.name = formatting["font_name"]
-                run._element.rPr.rFonts.set(qn("w:eastAsia"), formatting["font_name"])
-            if "font_size" in formatting:
-                font.size = Pt(formatting["font_size"])
-            if "font_color" in formatting:
-                color = formatting["font_color"].replace("#", "")
-                font.color.rgb = RGBColor.from_string(color)
+        # Цвет
+        if "font_color" in formatting:
+            color = formatting["font_color"].replace("#", "")
+            if len(color) == 8:  # RGBA
+                color = color[:6]
+            run.font.color.rgb = RGBColor.from_string(color)
 
-            # Стиль текста
-            if formatting.get("bold") is not None:
-                font.bold = formatting["bold"]
-            if formatting.get("italic") is not None:
-                font.italic = formatting["italic"]
-            if formatting.get("underline") is not None:
-                font.underline = formatting["underline"]
+        # Стили текста
+        if "bold" in formatting:
+            run.bold = formatting["bold"]
+        if "italic" in formatting:
+            run.italic = formatting["italic"]
+        if "underline" in formatting:
+            run.underline = formatting["underline"]
 
-        # --- Выравнивание ---
+        # Выравнивание
         align_map = {
             "left": WD_PARAGRAPH_ALIGNMENT.LEFT,
             "center": WD_PARAGRAPH_ALIGNMENT.CENTER,
             "right": WD_PARAGRAPH_ALIGNMENT.RIGHT,
             "justify": WD_PARAGRAPH_ALIGNMENT.JUSTIFY,
         }
-        alignment = formatting.get("alignment", "left").lower()
-        paragraph.alignment = align_map.get(alignment, WD_PARAGRAPH_ALIGNMENT.LEFT)
+        paragraph.alignment = align_map.get(
+            formatting.get("alignment", "left").lower(),
+            WD_PARAGRAPH_ALIGNMENT.LEFT
+        )
 
-        # --- Интервалы ---
+        # Интервалы
         if "space_before" in formatting:
             paragraph.paragraph_format.space_before = Pt(formatting["space_before"])
         if "space_after" in formatting:
             paragraph.paragraph_format.space_after = Pt(formatting["space_after"])
-        if "line_spacing" in formatting:
-            paragraph.paragraph_format.line_spacing = formatting["line_spacing"]
 
-    def _apply_table_cell_formatting(self, cell, formatting):
-        for paragraph in cell.paragraphs:
-            self._apply_paragraph_formatting(paragraph, formatting)
+    def _apply_table_formatting(self, table, formatting):
+        """Форматирование таблиц."""
+        for row in table.rows:
+            for cell in row.cells:
+                for paragraph in cell.paragraphs:
+                    run = paragraph.runs[0] if paragraph.runs else paragraph.add_run()
+                    # Шрифт и размер
+                    if "font_name" in formatting:
+                        run.font.name = formatting["font_name"]
+                    if "font_size" in formatting:
+                        run.font.size = Pt(formatting["font_size"])
+                    # Цвет
+                    if "font_color" in formatting:
+                        color = formatting["font_color"].replace("#", "")
+                        if len(color) == 8:
+                            color = color[:6]
+                        run.font.color.rgb = RGBColor.from_string(color)
+                    # Стиль
+                    if "bold" in formatting:
+                        run.bold = formatting["bold"]
+                    if "italic" in formatting:
+                        run.italic = formatting["italic"]
+                    if "underline" in formatting:
+                        run.underline = formatting["underline"]
+                    # Выравнивание
+                    align_map = {
+                        "left": WD_PARAGRAPH_ALIGNMENT.LEFT,
+                        "center": WD_PARAGRAPH_ALIGNMENT.CENTER,
+                        "right": WD_PARAGRAPH_ALIGNMENT.RIGHT,
+                        "justify": WD_PARAGRAPH_ALIGNMENT.JUSTIFY,
+                    }
+                    paragraph.alignment = align_map.get(
+                        formatting.get("alignment", "left").lower(),
+                        WD_PARAGRAPH_ALIGNMENT.LEFT
+                    )
 
-    # ---------- Для будущего: можно добавить отдельное форматирование для картинок ----------
+    def _apply_picture_formatting(self, picture, formatting):
+        """Форматирование картинок (размер)."""
+        if "width" in formatting:
+            picture.width = Pt(formatting["width"])
+        if "height" in formatting:
+            picture.height = Pt(formatting["height"])
 
-
+    # ==========================
+    #  Получение файла в памяти
+    # ==========================
+    def get_bytes(self):
+        file_stream = BytesIO()
+        self.doc.save(file_stream)
+        file_stream.seek(0)
+        return file_stream
