@@ -33,6 +33,7 @@ class ReportDocx:
     def add_table(self, headers, rows, formatting=None):
         # создаём таблицу с одной строкой для заголовков
         table = self.doc.add_table(rows=1, cols=len(headers))
+        table.style = "Table Grid"  # ✅ добавляет границы
         hdr_cells = table.rows[0].cells
         for i, header in enumerate(headers):
             hdr_cells[i].text = str(header)
