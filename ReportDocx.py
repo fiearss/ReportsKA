@@ -12,7 +12,7 @@ class ReportDocx:
         style = self.doc.styles['Normal']
         style.paragraph_format.space_after = Pt(0)
         style.paragraph_format.space_before = Pt(0)
-        style.paragraph_format.line_spacing = 1  # по желанию, можно 1.0 или другое
+        style.paragraph_format.line_spacing = 1.15  # по желанию, можно 1.0 или другое
     # ==========================
     #  Добавление заголовка
     # ==========================
