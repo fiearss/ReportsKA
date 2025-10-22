@@ -107,13 +107,21 @@ def generate_docx_report():
             filename += ".docx"
 
         formatting = data.get("formatting", {})
-        title = data.get("title", "")
+        # title = data.get("title", "")
         paragraphs = data.get("paragraphs", [])
         table = data.get("table", {})
         image = data.get("image", {})
 
         doc = ReportDocx()
-        doc.add_title(title, formatting=formatting)
+        title_obj = data.get("title")
+        if isinstance(title_obj, dict):
+            title_text = title_obj.get("text", "Отчёт")
+            title_formatting = title_obj.get("formatting")
+        else:
+            title_text = title_obj or "Отчёт"
+            title_formatting = None
+
+        doc.add_title(title_text, formatting=title_formatting)
 
         for paragraph in paragraphs:
             doc.add_paragraph(paragraph, formatting=formatting)
