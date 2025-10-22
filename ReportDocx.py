@@ -8,7 +8,11 @@ from io import BytesIO
 class ReportDocx:
     def __init__(self):
         self.doc = Document()
-
+        # Убираем интервалы по умолчанию для всех Normal абзацев
+        style = self.doc.styles['Normal']
+        style.paragraph_format.space_after = Pt(0)
+        style.paragraph_format.space_before = Pt(0)
+        style.paragraph_format.line_spacing = 1  # по желанию, можно 1.0 или другое
     # ==========================
     #  Добавление заголовка
     # ==========================
