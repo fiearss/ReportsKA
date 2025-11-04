@@ -20,8 +20,21 @@ class ReportDocx:
     # ==========================
     def add_title(self, text, formatting=None):
         paragraph = self.doc.add_heading(text, level=1)
+        # Стандартное форматирование для заголовка
+        default_formatting = {
+            "font_name": "Times New Roman",
+            "font_size": 14,
+            "alignment": "center",
+            "bold": True,
+            "font_color": "#000000"
+        }
+        # Объединяем стандартные настройки с пользовательскими
         if formatting:
-            self._apply_text_formatting(paragraph, formatting)
+            final_formatting = {**default_formatting, **formatting}
+        else:
+            final_formatting = default_formatting
+            
+        self._apply_text_formatting(paragraph, final_formatting)
         return paragraph
 
     # ==========================
@@ -29,8 +42,19 @@ class ReportDocx:
     # ==========================
     def add_paragraph(self, text, formatting=None):
         paragraph = self.doc.add_paragraph(text)
+        # Стандартное форматирование для параграфа
+        default_formatting = {
+            "font_name": "Times New Roman",
+            "font_size": 14,
+            "font_color": "#000000"
+        }
+        # Объединяем стандартные настройки с пользовательскими
         if formatting:
-            self._apply_text_formatting(paragraph, formatting)
+            final_formatting = {**default_formatting, **formatting}
+        else:
+            final_formatting = default_formatting
+            
+        self._apply_text_formatting(paragraph, final_formatting)
         return paragraph
 
     # ==========================
@@ -50,9 +74,19 @@ class ReportDocx:
             for j, cell_value in enumerate(row_data):
                 row_cells[j].text = str(cell_value)
 
+        # Стандартное форматирование для таблицы
+        default_formatting = {
+            "font_name": "Times New Roman",
+            "font_size": 12,
+            "font_color": "#000000"
+        }
+        # Объединяем стандартные настройки с пользовательскими
         if formatting:
-            self._apply_table_formatting(table, formatting)
-
+            final_formatting = {**default_formatting, **formatting}
+        else:
+            final_formatting = default_formatting
+            
+        self._apply_table_formatting(table, final_formatting)
         return table
 
     # ==========================
@@ -67,15 +101,29 @@ class ReportDocx:
                 self._apply_picture_formatting(picture, formatting)
 
             if caption:
+                # Для подписи используем стандартное форматирование параграфа
                 paragraph = self.doc.add_paragraph(caption)
+                default_formatting = {
+                    "font_name": "Times New Roman",
+                    "font_size": 14,
+                    "font_color": "#000000"
+                }
                 if formatting:
-                    self._apply_text_formatting(paragraph, formatting)
+                    final_formatting = {**default_formatting, **formatting}
+                else:
+                    final_formatting = default_formatting
+                self._apply_text_formatting(paragraph, final_formatting)
                     
             return picture
             
         except Exception as e:
             # В случае ошибки добавляем параграф с сообщением об ошибке
             error_paragraph = self.doc.add_paragraph(f"Ошибка загрузки изображения: {str(e)}")
+            self._apply_text_formatting(error_paragraph, {
+                "font_name": "Times New Roman", 
+                "font_size": 14,
+                "font_color": "#000000"
+            })
             return error_paragraph
 
     # ==========================
@@ -91,12 +139,12 @@ class ReportDocx:
         if "font_size" in formatting:
             run.font.size = Pt(formatting["font_size"])
 
-        # Цвет
-        if "font_color" in formatting:
-            color = formatting["font_color"].replace("#", "")
-            if len(color) == 8:  # RGBA
-                color = color[:6]
-            run.font.color.rgb = RGBColor.from_string(color)
+        # Цвет (по умолчанию черный)
+        font_color = formatting.get("font_color", "#000000")
+        color = font_color.replace("#", "")
+        if len(color) == 8:  # RGBA
+            color = color[:6]
+        run.font.color.rgb = RGBColor.from_string(color)
 
         # Стили текста
         if "bold" in formatting:
@@ -135,12 +183,12 @@ class ReportDocx:
                         run.font.name = formatting["font_name"]
                     if "font_size" in formatting:
                         run.font.size = Pt(formatting["font_size"])
-                    # Цвет
-                    if "font_color" in formatting:
-                        color = formatting["font_color"].replace("#", "")
-                        if len(color) == 8:
-                            color = color[:6]
-                        run.font.color.rgb = RGBColor.from_string(color)
+                    # Цвет (по умолчанию черный)
+                    font_color = formatting.get("font_color", "#000000")
+                    color = font_color.replace("#", "")
+                    if len(color) == 8:
+                        color = color[:6]
+                    run.font.color.rgb = RGBColor.from_string(color)
                     # Стиль
                     if "bold" in formatting:
                         run.bold = formatting["bold"]
@@ -190,6 +238,10 @@ class ReportDocx:
             
             picture.width = Inches(new_width_px / 96)
             picture.height = Inches(new_height_px / 96)
+
+        # Всегда выравниваем картинку по центру
+        paragraph = picture._parent
+        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
     # ==========================
     #  Получение файла в памяти
