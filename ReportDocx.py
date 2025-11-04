@@ -239,9 +239,34 @@ class ReportDocx:
             picture.width = Inches(new_width_px / 96)
             picture.height = Inches(new_height_px / 96)
 
-        # Всегда выравниваем картинку по центру
-        paragraph = picture._parent
-        paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        # Выравнивание картинки по центру (безопасный способ)
+        try:
+            # Пытаемся получить родительский параграф разными способами
+            paragraph = None
+            
+            # Способ 1: через _parent
+            if hasattr(picture, '_parent'):
+                paragraph = picture._parent
+            
+            # Способ 2: через parent
+            elif hasattr(picture, 'parent'):
+                paragraph = picture.parent
+                
+            # Способ 3: через обход атрибутов
+            else:
+                # Ищем любой атрибут, который может быть параграфом
+                for attr_name in dir(picture):
+                    attr = getattr(picture, attr_name)
+                    if hasattr(attr, 'alignment'):
+                        paragraph = attr
+                        break
+            
+            if paragraph and hasattr(paragraph, 'alignment'):
+                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                
+        except Exception as e:
+            # Если не удалось выровнять, просто пропускаем - это не критично
+            print(f"Не удалось выровнять изображение: {str(e)}")
 
     # ==========================
     #  Получение файла в памяти
