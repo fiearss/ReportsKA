@@ -160,13 +160,36 @@ class ReportDocx:
                         WD_PARAGRAPH_ALIGNMENT.LEFT
                     )
 
+    def _scale_size_image(self, width_px, height_px, max_width=567, max_height=850):
+        """Масштабирование размеров изображения."""
+        scale = max_width / width_px
+        new_height = height_px * scale
+
+        if new_height > max_height:
+            new_height = max_height
+
+        return max_width, new_height
+
     def _apply_picture_formatting(self, picture, formatting):
-        """Форматирование картинок (размер)."""
-        if "width" in formatting:
-            picture.width = Inches(formatting["width"] / 96)
-        if "height" in formatting:
-            picture.height = Inches(formatting["height"] / 96)
-        # Выравнивание убрано, так как оно вызывает ошибку
+        """Форматирование картинок с автоматическим расчетом размера."""
+        # Получаем оригинальные размеры картинки в пикселях
+        original_width_px = picture.width.inches * 96
+        original_height_px = picture.height.inches * 96
+        
+        if "width" in formatting or "height" in formatting:
+            # Если указаны конкретные размеры
+            if "width" in formatting:
+                picture.width = Inches(formatting["width"] / 96)
+            if "height" in formatting:
+                picture.height = Inches(formatting["height"] / 96)
+        else:
+            # Автоматическое масштабирование с использованием _scale_size_image
+            new_width_px, new_height_px = self._scale_size_image(
+                original_width_px, original_height_px
+            )
+            
+            picture.width = Inches(new_width_px / 96)
+            picture.height = Inches(new_height_px / 96)
 
     # ==========================
     #  Получение файла в памяти
