@@ -65,28 +65,43 @@ class ReportDocx:
         table = self.doc.add_table(rows=1, cols=len(headers))
         table.style = "Table Grid"
         hdr_cells = table.rows[0].cells
+        
+        # Форматирование для заголовков (всегда по центру)
+        header_formatting = {
+            "font_name": "Times New Roman",
+            "font_size": 12,
+            "font_color": "#000000",
+            "alignment": "center"
+        }
+        
+        # Форматирование для данных
+        data_formatting = {
+            "font_name": "Times New Roman", 
+            "font_size": 12,
+            "font_color": "#000000"
+        }
+        
+        # Объединяем с пользовательскими настройками если есть
+        if formatting:
+            header_formatting = {**header_formatting, **formatting}
+            data_formatting = {**data_formatting, **formatting}
+        
+        # Заполняем заголовки с выравниванием по центру
         for i, header in enumerate(headers):
             hdr_cells[i].text = str(header)
+            # Применяем форматирование к каждой ячейке заголовка
+            for paragraph in hdr_cells[i].paragraphs:
+                self._apply_text_formatting(paragraph, header_formatting)
 
-        # добавляем строки данных
+        # добавляем строки данных с обычным выравниванием
         for row_data in rows:
             row_cells = table.add_row().cells
             for j, cell_value in enumerate(row_data):
                 row_cells[j].text = str(cell_value)
+                # Применяем форматирование к каждой ячейке данных
+                for paragraph in row_cells[j].paragraphs:
+                    self._apply_text_formatting(paragraph, data_formatting)
 
-        # Стандартное форматирование для таблицы
-        default_formatting = {
-            "font_name": "Times New Roman",
-            "font_size": 12,
-            "font_color": "#000000"
-        }
-        # Объединяем стандартные настройки с пользовательскими
-        if formatting:
-            final_formatting = {**default_formatting, **formatting}
-        else:
-            final_formatting = default_formatting
-            
-        self._apply_table_formatting(table, final_formatting)
         return table
 
     # ==========================
@@ -97,8 +112,10 @@ class ReportDocx:
         try:
             picture = self.doc.add_picture(image_bytes)
             
-            if formatting:
-                self._apply_picture_formatting(picture, formatting)
+            # Всегда применяем форматирование, даже если formatting=None
+            # Если formatting=None, передаем пустой словарь
+            format_to_apply = formatting if formatting is not None else {}
+            self._apply_picture_formatting(picture, format_to_apply)
 
             if caption:
                 # Для подписи используем стандартное форматирование параграфа
@@ -209,6 +226,7 @@ class ReportDocx:
                     )
 
     def _scale_size_image(self, width_px, height_px, max_width=580, max_height=850):
+        print(f"width_px: {width_px}, height_px: {height_px}, max_width: {max_width}, max_height: {max_height}")
         """Масштабирование размеров изображения."""
         scale = max_width / width_px
         new_height = height_px * scale
@@ -216,13 +234,20 @@ class ReportDocx:
         if new_height > max_height:
             new_height = max_height
 
+        print(f"scale: {scale}, new_height: {new_height}")
         return max_width, new_height
 
     def _apply_picture_formatting(self, picture, formatting):
         """Форматирование картинок с автоматическим расчетом размера."""
-        # Получаем оригинальные размеры картинки в пикселях
-        original_width_px = picture.width.inches * 96
-        original_height_px = picture.height.inches * 96
+        # Получаем оригинальные размеры картинки в дюймах
+        original_width_in = picture.width.inches
+        original_height_in = picture.height.inches
+        
+        # Конвертируем в пиксели (1 дюйм = 96 пикселей)
+        original_width_px = original_width_in * 96
+        original_height_px = original_height_in * 96
+        
+        print(f"Original size - inches: {original_width_in}x{original_height_in}, pixels: {original_width_px}x{original_height_px}")
         
         if "width" in formatting or "height" in formatting:
             # Если указаны конкретные размеры
@@ -236,8 +261,14 @@ class ReportDocx:
                 original_width_px, original_height_px
             )
             
-            picture.width = Inches(new_width_px / 96)
-            picture.height = Inches(new_height_px / 96)
+            # Конвертируем обратно в дюймы
+            new_width_in = new_width_px / 96
+            new_height_in = new_height_px / 96
+            
+            picture.width = Inches(new_width_in)
+            picture.height = Inches(new_height_in)
+            
+            print(f"New size - inches: {new_width_in}x{new_height_in}, pixels: {new_width_px}x{new_height_px}")
 
 
     # ==========================
