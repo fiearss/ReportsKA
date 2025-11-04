@@ -167,4 +167,7 @@ def generate_docx_report():
         )
 
     except Exception as e:
+        import traceback
+        print(f"Error generating DOCX: {str(e)}")
+        print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
