@@ -1,6 +1,6 @@
 import csv
-from io import StringIO, BytesIO
-from flask import Blueprint, Response, request, jsonify, send_file, render_template, send_from_directory, redirect, url_for
+from io import StringIO
+from flask import Blueprint, Response, request, jsonify, send_file, render_template, send_from_directory, render_template, redirect, url_for
 import os
 import io
 from ReportOdt import KaForRssReport
@@ -102,72 +102,57 @@ def generate_docx_report():
         if not data:
             return jsonify({"error": "No JSON data received"}), 400
 
-        # Имя файла берём из query params или по умолчанию
-        filename = request.args.get("filename", "report.docx")
+        filename = data.get("filename", "report.docx")
         if not filename.endswith(".docx"):
             filename += ".docx"
 
-        # --- Проверка старого формата ---
-        if "content" not in data:
-            # Преобразуем старый формат в content
-            content = []
-
-            # Параграфы
-            for p in data.get("paragraphs", []):
-                if isinstance(p, dict):
-                    text = p.get("text", "")
-                    fmt = p.get("formatting")
-                else:
-                    text = str(p)
-                    fmt = None
-                content.append({"type": "paragraph", "text": text, "formatting": fmt})
-
-            # Таблица
-            table = data.get("table")
-            if table and "headers" in table and "rows" in table:
-                content.append({
-                    "type": "table",
-                    "headers": table["headers"],
-                    "rows": table["rows"],
-                    "formatting": table.get("formatting")
-                })
-
-            # Картинка
-            img = data.get("image")
-            if img:
-                # В старом формате 'map' или 'path'
-                img_data = img.get("map") or img.get("path")
-                content.append({
-                    "type": "image",
-                    "data": img_data,
-                    "formatting": img.get("formatting"),
-                    "caption": img.get("caption")
-                })
-
-            # Заголовок
-            title_obj = data.get("title")
-            if isinstance(title_obj, dict):
-                title = {"text": title_obj.get("text", "Отчёт"), "formatting": title_obj.get("formatting")}
-            else:
-                title = {"text": str(title_obj) if title_obj else "Отчёт", "formatting": None}
-
-            # Новый формат для генератора
-            data = {"title": title, "content": content}
-
-        # --- Генерация DOCX ---
+        # Создаём экземпляр генератора
         doc = ReportDocx()
-        doc.build_from_content(data)
-        file_stream = doc.get_bytes()
 
+        # --- Заголовок ---
+        title = data.get("title")
+        if isinstance(title, dict):
+            text = title.get("text", "Отчёт")
+            formatting = title.get("formatting")
+        else:
+            text = title or "Отчёт"
+            formatting = None
+        doc.add_title(text, formatting=formatting)
+
+        # --- Параграфы ---
+        for p in data.get("paragraphs", []):
+            if isinstance(p, dict):
+                doc.add_paragraph(p.get("text", ""), formatting=p.get("formatting"))
+            else:
+                doc.add_paragraph(p)
+
+        # --- Таблица ---
+        table = data.get("table")
+        if table and "headers" in table and "rows" in table:
+            doc.add_table(
+                table["headers"],
+                table["rows"],
+                formatting=table.get("formatting")
+            )
+
+        # --- Картинка ---
+        image = data.get("image")
+        if image and "bytes" in image:
+            img_bytes = io.BytesIO(bytes(image["bytes"]))  # принимаем base64/байты
+            doc.add_picture(
+                img_bytes,
+                formatting=image.get("formatting"),
+                caption=image.get("caption")
+            )
+
+        # --- Генерация файла в оперативке ---
+        file_stream = doc.get_bytes()  # вместо doc.doc.save(...)
         return send_file(
             file_stream,
             as_attachment=True,
             download_name=filename,
-            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
 
     except Exception as e:
-        import traceback
-        print(f"Error generating DOCX: {str(e)}")
-        print(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
