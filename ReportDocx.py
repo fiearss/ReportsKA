@@ -1,8 +1,9 @@
 # generator/ReportDocx.py
 from docx import Document
-from docx.shared import Pt, RGBColor
+from docx.shared import Pt, RGBColor, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from io import BytesIO
+import base64
 
 
 class ReportDocx:
@@ -12,7 +13,8 @@ class ReportDocx:
         style = self.doc.styles['Normal']
         style.paragraph_format.space_after = Pt(0)
         style.paragraph_format.space_before = Pt(0)
-        style.paragraph_format.line_spacing = 1.15  # по желанию, можно 1.0 или другое
+        style.paragraph_format.line_spacing = 1.15
+
     # ==========================
     #  Добавление заголовка
     # ==========================
@@ -37,7 +39,7 @@ class ReportDocx:
     def add_table(self, headers, rows, formatting=None):
         # создаём таблицу с одной строкой для заголовков
         table = self.doc.add_table(rows=1, cols=len(headers))
-        table.style = "Table Grid"  # ✅ добавляет границы
+        table.style = "Table Grid"
         hdr_cells = table.rows[0].cells
         for i, header in enumerate(headers):
             hdr_cells[i].text = str(header)
@@ -57,17 +59,24 @@ class ReportDocx:
     #  Добавление картинки
     # ==========================
     def add_picture(self, image_bytes, formatting=None, caption=None):
-        # image_bytes — это BytesIO или путь к файлу
-        picture = self.doc.add_picture(image_bytes)
-
-        if formatting:
-            self._apply_picture_formatting(picture, formatting)
-
-        if caption:
-            paragraph = self.doc.add_paragraph(caption)
+        """Добавляет картинку из BytesIO"""
+        try:
+            picture = self.doc.add_picture(image_bytes)
+            
             if formatting:
-                self._apply_text_formatting(paragraph, formatting)
-        return picture
+                self._apply_picture_formatting(picture, formatting)
+
+            if caption:
+                paragraph = self.doc.add_paragraph(caption)
+                if formatting:
+                    self._apply_text_formatting(paragraph, formatting)
+                    
+            return picture
+            
+        except Exception as e:
+            # В случае ошибки добавляем параграф с сообщением об ошибке
+            error_paragraph = self.doc.add_paragraph(f"Ошибка загрузки изображения: {str(e)}")
+            return error_paragraph
 
     # ==========================
     #  Внутренние функции
@@ -152,11 +161,24 @@ class ReportDocx:
                     )
 
     def _apply_picture_formatting(self, picture, formatting):
-        """Форматирование картинок (размер)."""
+        """Форматирование картинок (размер и выравнивание)."""
         if "width" in formatting:
-            picture.width = Pt(formatting["width"])
+            picture.width = Inches(formatting["width"] / 96)  # Конвертация из пикселей в дюймы
         if "height" in formatting:
-            picture.height = Pt(formatting["height"])
+            picture.height = Inches(formatting["height"] / 96)
+        
+        # Выравнивание картинки
+        if "alignment" in formatting:
+            align_map = {
+                "left": WD_PARAGRAPH_ALIGNMENT.LEFT,
+                "center": WD_PARAGRAPH_ALIGNMENT.CENTER,
+                "right": WD_PARAGRAPH_ALIGNMENT.RIGHT,
+            }
+            paragraph = picture._parent
+            paragraph.alignment = align_map.get(
+                formatting["alignment"].lower(),
+                WD_PARAGRAPH_ALIGNMENT.LEFT
+            )
 
     # ==========================
     #  Получение файла в памяти
@@ -166,4 +188,3 @@ class ReportDocx:
         self.doc.save(file_stream)
         file_stream.seek(0)
         return file_stream
-

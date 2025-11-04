@@ -109,44 +109,50 @@ def generate_docx_report():
         # Создаём экземпляр генератора
         doc = ReportDocx()
 
-        # --- Заголовок ---
-        title = data.get("title")
-        if isinstance(title, dict):
-            text = title.get("text", "Отчёт")
-            formatting = title.get("formatting")
-        else:
-            text = title or "Отчёт"
-            formatting = None
-        doc.add_title(text, formatting=formatting)
-
-        # --- Параграфы ---
-        for p in data.get("paragraphs", []):
-            if isinstance(p, dict):
-                doc.add_paragraph(p.get("text", ""), formatting=p.get("formatting"))
-            else:
-                doc.add_paragraph(p)
-
-        # --- Таблица ---
-        table = data.get("table")
-        if table and "headers" in table and "rows" in table:
-            doc.add_table(
-                table["headers"],
-                table["rows"],
-                formatting=table.get("formatting")
-            )
-
-        # --- Картинка ---
-        image = data.get("image")
-        if image and "bytes" in image:
-            img_bytes = io.BytesIO(bytes(image["bytes"]))  # принимаем base64/байты
-            doc.add_picture(
-                img_bytes,
-                formatting=image.get("formatting"),
-                caption=image.get("caption")
-            )
+        # Обрабатываем элементы в том порядке, в котором они переданы
+        elements = data.get("elements", [])
+        
+        for element in elements:
+            element_type = element.get("type")
+            
+            if element_type == "title":
+                # Заголовок
+                text = element.get("text", "Отчёт")
+                formatting = element.get("formatting")
+                doc.add_title(text, formatting=formatting)
+                
+            elif element_type == "paragraph":
+                # Параграф
+                text = element.get("text", "")
+                formatting = element.get("formatting")
+                doc.add_paragraph(text, formatting=formatting)
+                
+            elif element_type == "table":
+                # Таблица
+                headers = element.get("headers", [])
+                rows = element.get("rows", [])
+                formatting = element.get("formatting")
+                if headers and rows:
+                    doc.add_table(headers, rows, formatting=formatting)
+                    
+            elif element_type == "image":
+                # Картинка
+                image_data = element.get("bytes")
+                formatting = element.get("formatting")
+                caption = element.get("caption")
+                if image_data:
+                    # Обрабатываем data URL
+                    if isinstance(image_data, str) and image_data.startswith('data:image'):
+                        image_data = image_data.split(',')[1]
+                    
+                    import base64
+                    img_bytes = base64.b64decode(image_data)
+                    img_stream = io.BytesIO(img_bytes)
+                    
+                    doc.add_picture(img_stream, formatting=formatting, caption=caption)
 
         # --- Генерация файла в оперативке ---
-        file_stream = doc.get_bytes()  # вместо doc.doc.save(...)
+        file_stream = doc.get_bytes()
         return send_file(
             file_stream,
             as_attachment=True,
