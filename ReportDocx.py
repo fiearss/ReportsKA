@@ -161,24 +161,12 @@ class ReportDocx:
                     )
 
     def _apply_picture_formatting(self, picture, formatting):
-        """Форматирование картинок (размер и выравнивание)."""
+        """Форматирование картинок (размер)."""
         if "width" in formatting:
-            picture.width = Inches(formatting["width"] / 96)  # Конвертация из пикселей в дюймы
+            picture.width = Inches(formatting["width"] / 96)
         if "height" in formatting:
             picture.height = Inches(formatting["height"] / 96)
-        
-        # Выравнивание картинки
-        if "alignment" in formatting:
-            align_map = {
-                "left": WD_PARAGRAPH_ALIGNMENT.LEFT,
-                "center": WD_PARAGRAPH_ALIGNMENT.CENTER,
-                "right": WD_PARAGRAPH_ALIGNMENT.RIGHT,
-            }
-            paragraph = picture._parent
-            paragraph.alignment = align_map.get(
-                formatting["alignment"].lower(),
-                WD_PARAGRAPH_ALIGNMENT.LEFT
-            )
+        # Выравнивание убрано, так как оно вызывает ошибку
 
     # ==========================
     #  Получение файла в памяти
