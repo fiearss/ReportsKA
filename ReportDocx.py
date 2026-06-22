@@ -1,7 +1,9 @@
 # generator/ReportDocx.py
 from docx import Document
-from docx.shared import Pt, RGBColor, Inches
+from docx.shared import Pt, RGBColor, Inches, Cm, Emu
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 from io import BytesIO
 import base64
 
@@ -60,7 +62,18 @@ class ReportDocx:
     # ==========================
     #  Добавление таблицы
     # ==========================
-    def add_table(self, headers, rows, formatting=None):
+    def add_table(self, headers, rows, formatting=None, col_widths=None):
+        """
+        Добавляет таблицу в документ.
+        
+        Параметры:
+            headers - список заголовков колонок
+            rows - список строк данных (каждая строка - список значений)
+            formatting - словарь форматирования текста
+            col_widths - список ширин колонок в дюймах (например, [2.0, 1.5, 3.0])
+                        Если не указано, ширина колонок будет автоматической.
+                        Количество значений должно совпадать с количеством колонок.
+        """
         # создаём таблицу с одной строкой для заголовков
         table = self.doc.add_table(rows=1, cols=len(headers))
         table.style = "Table Grid"
@@ -102,7 +115,50 @@ class ReportDocx:
                 for paragraph in row_cells[j].paragraphs:
                     self._apply_text_formatting(paragraph, data_formatting)
 
+        # Устанавливаем ширину колонок если задана
+        if col_widths:
+            self._set_table_col_widths(table, col_widths)
+
         return table
+
+    def _set_table_col_widths(self, table, col_widths):
+        """
+        Устанавливает ширину колонок таблицы.
+        
+        Параметры:
+            table - объект таблицы
+            col_widths - список ширин колонок в дюймах (например, [2.0, 1.5, 3.0])
+        """
+        num_cols = len(table.columns)
+        
+        # Если передано меньше ширин, чем колонок — дополняем нулями
+        if len(col_widths) < num_cols:
+            col_widths = list(col_widths) + [0] * (num_cols - len(col_widths))
+        # Если передано больше ширин, чем колонок — обрезаем
+        elif len(col_widths) > num_cols:
+            col_widths = col_widths[:num_cols]
+        
+        # Устанавливаем ширину для каждой колонки
+        for i, width in enumerate(col_widths):
+            if width > 0:
+                col = table.columns[i]
+                # Устанавливаем фиксированную ширину колонки
+                col.width = Inches(width)
+                
+                # Также устанавливаем ширину для всех ячеек в этой колонке
+                # и отключаем автоматическое изменение ширины ( autofit )
+                for cell in col.cells:
+                    cell.width = Inches(width)
+                    # Отключаем autofit для ячейки
+                    tc = cell._tc
+                    tcPr = tc.get_or_add_tcPr()
+                    # Устанавливаем фиксированную ширину (w:tcW с w:type="dxa")
+                    tcW = tcPr.find(qn('w:tcW'))
+                    if tcW is None:
+                        tcW = OxmlElement('w:tcW')
+                        tcPr.append(tcW)
+                    tcW.set(qn('w:w'), str(int(width * 1440)))  # 1 дюйм = 1440 twips
+                    tcW.set(qn('w:type'), 'dxa')
 
     # ==========================
     #  Добавление картинки

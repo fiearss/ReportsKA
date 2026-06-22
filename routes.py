@@ -132,8 +132,9 @@ def generate_docx_report():
                 headers = element.get("headers", [])
                 rows = element.get("rows", [])
                 formatting = element.get("formatting")
+                col_widths = element.get("col_widths")
                 if headers and rows:
-                    doc.add_table(headers, rows, formatting=formatting)
+                    doc.add_table(headers, rows, formatting=formatting, col_widths=col_widths)
                     
             elif element_type == "image":
                 # Картинка
