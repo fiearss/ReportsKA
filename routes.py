@@ -104,8 +104,26 @@ def create_report_csv():
 
 @routes.route('/report/docx', methods=['POST'])
 def generate_docx_report():
+    import logging
+    import time
+    import json
+    import traceback
+
+    logger = logging.getLogger(__name__)
+
     try:
-        data = request.get_json()
+        # Получаем сырые байты тела запроса, чтобы измерить размер
+        raw_data = request.get_data(cache=True)
+        logger.info("Получен запрос /report/docx, размер тела: %d байт (%.1f МБ)",
+                     len(raw_data), len(raw_data) / (1024 * 1024))
+
+        # Парсим JSON из сырых данных
+        try:
+            data = json.loads(raw_data)
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            logger.error("Ошибка парсинга JSON: %s", e)
+            return jsonify({"error": f"Невалидный JSON: {e}"}), 400
+
         if not data:
             return jsonify({"error": "No JSON data received"}), 400
 
@@ -116,8 +134,11 @@ def generate_docx_report():
         # Создаём экземпляр генератора
         doc = ReportDocx()
 
-        # Обрабатываем элементы в том порядке, в котором они переданы
+        # Обрабатываем элементы в том порядке, в которых они переданы
         elements = data.get("elements", [])
+        logger.info("Количество элементов отчёта: %d", len(elements))
+
+        start_time = time.time()
         
         for element in elements:
             element_type = element.get("type")
@@ -159,8 +180,13 @@ def generate_docx_report():
                     
                     doc.add_picture(img_stream, formatting=formatting, caption=caption)
 
+        elapsed = time.time() - start_time
+        logger.info("Элементы обработаны за %.2f сек, генерируем файл...", elapsed)
+
         # --- Генерация файла в оперативке ---
         file_stream = doc.get_bytes()
+        
+        logger.info("Файл сформирован, отправляем клиенту...")
         return send_file(
             file_stream,
             as_attachment=True,
@@ -169,4 +195,8 @@ def generate_docx_report():
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        logger.error("Ошибка при генерации отчёта: %s\n%s", e, traceback.format_exc())
+        # Возвращаем JSON с CORS-заголовками
+        response = jsonify({"error": str(e)}), 500
+        response[0].headers['Access-Control-Allow-Origin'] = '*'
+        return response
