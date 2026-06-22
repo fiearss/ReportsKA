@@ -11,6 +11,13 @@ routes = Blueprint('routes', __name__, url_prefix='/')
 TEMPLATE_REPORT_FOLDER = 'template_reports'
 UPLOAD_PASSWORD = "1234"  # Пароль для загрузки файлов
 
+# Увеличиваем лимит на чтение JSON (по умолчанию ~16MB в Werkzeug)
+# Это позволяет обрабатывать большие POST-запросы с данными отчётов
+from werkzeug.wsgi import LimitedStream
+
+# Максимальный размер тела запроса: 200 МБ
+MAX_REQUEST_BYTES = 200 * 1024 * 1024
+
 
 @routes.route('/')
 def index():

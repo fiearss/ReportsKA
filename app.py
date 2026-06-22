@@ -4,6 +4,10 @@ import os
 
 app = Flask(__name__, static_folder='website/static', template_folder='website/templates')
 
+# Увеличиваем максимальный размер запроса до 200 МБ (по умолчанию Flask не ограничивает,
+# но явное указание помогает корректно обрабатывать большие payloads)
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB
+
 app.register_blueprint(routes)
 
 # Разрешаем CORS запросы
